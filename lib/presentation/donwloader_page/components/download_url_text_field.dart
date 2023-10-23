@@ -7,11 +7,11 @@ class _Strings {
 }
 
 class _DownloadUrlTextField extends StatelessWidget {
-  final DownloaderAPI _downloaderAPI;
+  final DownloadRepository _downloaderAPI;
   final TextEditingController _urlController =
       TextEditingController(text: _Strings.urlDefaultContent);
 
-  _DownloadUrlTextField({required DownloaderAPI downloaderAPI})
+  _DownloadUrlTextField({required DownloadRepository downloaderAPI})
       : _downloaderAPI = downloaderAPI;
 
   @override
@@ -39,6 +39,7 @@ class _DownloadUrlTextField extends StatelessWidget {
   }
 
   void onDownloadIconPressed() {
-    _downloaderAPI.startANewDownloadCase();
+    String url = _urlController.text;
+    _downloaderAPI.startDownload(url);
   }
 }

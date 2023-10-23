@@ -1,17 +1,16 @@
 part of downloader_page_view;
 
 class _DownloadCaseContainer extends StatelessWidget {
-  final String _url;
-  final double _progress;
+  final DownloadCase _downloadCase;
 
-  const _DownloadCaseContainer({required String url, required double progress})
-      : _url = url,
-        _progress = progress;
+  const _DownloadCaseContainer(this._downloadCase);
 
   @override
   Widget build(BuildContext context) {
     const padding = EdgeInsets.all(3.0);
-    final child = _buildInlWellContainer(_url, _progress);
+    final url = _downloadCase.url;
+    final progress = _downloadCase.progress;
+    final child = _buildInlWellContainer(url, progress);
     return Padding(padding: padding, child: child);
   }
 
@@ -60,14 +59,29 @@ class _DownloadCaseContainer extends StatelessWidget {
   }
 
   Widget _buildIconButtonsSection() {
-    const iconReusme = Icon(Icons.play_arrow);
-    const iconCancel = Icon(Icons.cancel);
-    final resumeButton =
-        IconButton(icon: iconReusme, iconSize: 30, onPressed: () {});
-    final cancelButton =
-        IconButton(icon: iconCancel, iconSize: 30, onPressed: () {});
+    List<Widget> children = [];
 
-    List<Widget> children = [resumeButton, cancelButton];
+    if (_downloadCase.status == DonwloadStatus.pausing) {
+      const iconStart = Icon(Icons.play_arrow);
+      final startButton = IconButton(
+          icon: iconStart, iconSize: 30, onPressed: _downloadCase.start);
+
+      children.add(startButton);
+    }
+
+    if (_downloadCase.status == DonwloadStatus.ongoing) {
+      const iconPause = Icon(Icons.pause);
+      final pauseButton = IconButton(
+          icon: iconPause, iconSize: 30, onPressed: _downloadCase.pause);
+
+      children.add(pauseButton);
+    }
+
+    const iconCancel = Icon(Icons.cancel);
+    final cancelButton = IconButton(
+        icon: iconCancel, iconSize: 30, onPressed: _downloadCase.cancel);
+
+    children.add(cancelButton);
 
     final row = Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween, children: children);

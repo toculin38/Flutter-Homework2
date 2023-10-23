@@ -1,8 +1,8 @@
 part of downloader_page_view;
 
 class _DownloadCaseListView extends StatelessWidget {
-  final DownloaderAPI _downloaderAPI;
-  const _DownloadCaseListView({required DownloaderAPI downloaderAPI})
+  final DownloadRepository _downloaderAPI;
+  const _DownloadCaseListView({required DownloadRepository downloaderAPI})
       : _downloaderAPI = downloaderAPI;
 
   @override
@@ -11,13 +11,23 @@ class _DownloadCaseListView extends StatelessWidget {
   }
 
   Widget _buildExpandedListView() {
-    List<Widget> children = [
-      _DownloadCaseContainer(url: 'https://example.com', progress: 0.5),
-      _DownloadCaseContainer(
-          url:
-              'https://upload.wikimedia.org/wikipedia/commons/e/e6/Clocktower_Panorama_20080622_20mb.jpg',
-          progress: 0.7),
-    ];
-    return Expanded(child: ListView(children: children));
+    StreamBuilder streamBuilder = StreamBuilder(
+        stream: _downloaderAPI.onDonwloadCasesUpdateStream,
+        builder: (context, snapshot) {
+          List<Widget> children = [];
+
+          if (snapshot.hasData) {
+            for (DownloadCase downloadCase in snapshot.data) {
+              final downloadCaseContainer =
+                  _DownloadCaseContainer(downloadCase);
+
+              children.add(downloadCaseContainer);
+            }
+          }
+
+          return ListView(children: children);
+        });
+
+    return Expanded(child: streamBuilder);
   }
 }
