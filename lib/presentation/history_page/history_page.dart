@@ -58,7 +58,10 @@ class HistoryPage extends StatelessWidget {
 
     Widget imageWidget;
     if (imageFile.existsSync()) {
-      imageWidget = Image.file(imageFile, fit: BoxFit.cover);
+      imageWidget = AspectRatio(
+        aspectRatio: 1.0, // for square
+        child: Image.file(imageFile, fit: BoxFit.cover),
+      );
     } else {
       imageWidget = Container(
         color: Colors.grey,
@@ -76,31 +79,32 @@ class HistoryPage extends StatelessWidget {
         style: const TextStyle(color: Colors.white, fontSize: 10),
         overflow: TextOverflow.ellipsis);
 
-    return GestureDetector(
-      onTap: () {},
-      child: Stack(
-        children: [
-          imageWidget,
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              color: Colors.black.withOpacity(0.5),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  fileText,
-                  urlText,
-                ],
-              ),
+    final stack = Stack(
+      children: [
+        imageWidget,
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: Container(
+            color: Colors.black.withOpacity(0.5),
+            padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                fileText,
+                urlText,
+              ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
+    );
+
+    return GestureDetector(
+      onTap: () {},
+      child: stack,
     );
   }
 }
