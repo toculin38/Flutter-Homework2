@@ -82,7 +82,7 @@ class _DownloadCaseContainerState extends State<_DownloadCaseContainer>
   Widget _buildIconButtonsSection() {
     List<Widget> children = [];
 
-    if (_downloadCase.status == DonwloadStatus.pausing) {
+    if (_downloadCase.status == DownloadStatus.pausing) {
       const iconStart = Icon(Icons.play_arrow);
       final startButton = IconButton(
           icon: iconStart, iconSize: 30, onPressed: _downloadCase.start);
@@ -90,7 +90,7 @@ class _DownloadCaseContainerState extends State<_DownloadCaseContainer>
       children.add(startButton);
     }
 
-    if (_downloadCase.status == DonwloadStatus.ongoing) {
+    if (_downloadCase.status == DownloadStatus.ongoing) {
       const iconPause = Icon(Icons.pause);
       final pauseButton = IconButton(
           icon: iconPause, iconSize: 30, onPressed: _downloadCase.pause);

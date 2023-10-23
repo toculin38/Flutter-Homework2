@@ -11,80 +11,81 @@ import 'dart:io';
 part 'download_case.dart';
 
 class _Strings {
-  static String illegalCharsRegex = r'[\/:*?"<>|]';
-  static String directoryPath = '/storage/emulated/0/Download';
+  static const String illegalCharsRegex = r'[\/:*?"<>|]';
+  static const String directoryPath = '/storage/emulated/0/Download';
 }
 
 class DownloadRepositoryImpl implements DownloadRepository {
   final List<DownloadCase> _downloadCases = [];
   final HistoryRepository _historyRepo;
-
   final _downloadCasesUpdateStreamController =
       StreamController<List<DownloadCase>>.broadcast();
-
   final _errorMessageStreamController = StreamController<String>.broadcast();
 
+  DownloadRepositoryImpl(this._historyRepo);
+
   @override
-  Stream<List<DownloadCase>> get onDonwloadCasesUpdateStream =>
+  Stream<List<DownloadCase>> get onDownloadCasesUpdateStream =>
       _downloadCasesUpdateStreamController.stream;
 
   @override
   Stream<String> get errorMessageStream => _errorMessageStreamController.stream;
 
-  DownloadRepositoryImpl(this._historyRepo);
-
   @override
   void startDownload(String url) async {
     if (await _isValidUrl(url)) {
-      final downloadCase = createDownloadCase(url);
-      downloadCase.start();
-      _addNewDownloadCase(downloadCase);
+      final downloadCase = _createDownloadCase(url);
+      _startCase(downloadCase);
+    } else {
+      _reportError("Invalid URL: $url");
     }
   }
 
-  DownloadCase createDownloadCase(String url) {
+  DownloadCase _createDownloadCase(String url) {
     final uri = Uri.parse(url);
     final filePath = _generateValidFilePath(uri);
     final downloadCase = DownloadCase(url, filePath);
-    downloadCase._setOnDataCallback(_notifyDownloadCasesUpdate);
-    downloadCase._setOnDoneCallback(() => _onDoneCallback(downloadCase));
-    downloadCase._setOnErrorCallback(_onErrorCallback);
-    downloadCase._setOnStatusChangeCallback(_notifyDownloadCasesUpdate);
-    downloadCase._setOnCaseDisposedCallback(
-        () => _onCaseDisposedCallback(downloadCase));
+
+    // Set callbacks
+    downloadCase
+      ..setOnData(_updateDownloadCases)
+      ..setOnDone(() => _handleDownloadCompletion(downloadCase))
+      ..setOnError(_reportError)
+      ..setOnStatusChange(_updateDownloadCases)
+      ..setOnDisposed(() => _removeDownloadCase(downloadCase));
+
     return downloadCase;
   }
 
   Future<bool> _isValidUrl(String url) async {
-    final client = http.Client();
-
     try {
       final uri = Uri.parse(url);
-      final response = await client.head(uri);
+      final response = await http.Client().head(uri);
 
-      String? contentType = response.headers['content-type'];
-
-      bool isValidUri = uri.hasAuthority;
-      bool isContentTypeLegal = contentType != null &&
-          (contentType.contains('image/jpeg') ||
-              contentType.contains('image/png'));
-
-      return isValidUri && isContentTypeLegal;
+      return _isUriValid(uri) &&
+          _isContentTypeValid(response.headers['content-type']);
     } catch (e) {
-      _errorMessageStreamController.add(e.toString());
-    } finally {
-      client.close();
+      _reportError(e.toString());
+      return false;
     }
+  }
 
-    return false;
+  bool _isUriValid(Uri uri) => uri.hasAuthority;
+
+  bool _isContentTypeValid(String? contentType) {
+    return contentType != null &&
+        (contentType.contains('image/jpeg') ||
+            contentType.contains('image/png'));
   }
 
   String _generateValidFilePath(Uri uri) {
-    final RegExp illegalChars = RegExp(_Strings.illegalCharsRegex);
-    final String fileName = uri.pathSegments.last.replaceAll(illegalChars, '_');
+    final illegalChars = RegExp(_Strings.illegalCharsRegex);
+    final fileName = uri.pathSegments.last.replaceAll(illegalChars, '_');
+    return _findUniqueFilePath(fileName);
+  }
 
+  String _findUniqueFilePath(String fileName) {
     String filePath = path.join(_Strings.directoryPath, fileName);
-
     int duplicateNumber = 1;
 
     while (File(filePath).existsSync()) {
@@ -96,30 +97,27 @@ class DownloadRepositoryImpl implements DownloadRepository {
     return filePath;
   }
 
-  void _addNewDownloadCase(DownloadCase downloadCase) {
+  void _startCase(DownloadCase downloadCase) {
+    downloadCase.start();
     _downloadCases.add(downloadCase);
-    _notifyDownloadCasesUpdate();
+    _updateDownloadCases();
   }
 
-  void _deleteDownloadCase(DownloadCase downloadCase) {
-    _downloadCases.remove(downloadCase);
-    _notifyDownloadCasesUpdate();
-  }
-
-  void _notifyDownloadCasesUpdate() {
-    _downloadCasesUpdateStreamController.add(_downloadCases);
-  }
-
-  void _onDoneCallback(DownloadCase downloadCase) {
-    _notifyDownloadCasesUpdate();
+  void _handleDownloadCompletion(DownloadCase downloadCase) {
+    _updateDownloadCases();
     _historyRepo.addNewHistoryItem(downloadCase.url, downloadCase._filePath);
   }
 
-  void _onCaseDisposedCallback(DownloadCase downloadCase) {
-    _deleteDownloadCase(downloadCase);
+  void _removeDownloadCase(DownloadCase downloadCase) {
+    _downloadCases.remove(downloadCase);
+    _updateDownloadCases();
   }
 
-  void _onErrorCallback(String message) {
+  void _updateDownloadCases() {
+    _downloadCasesUpdateStreamController.add(_downloadCases);
+  }
+
+  void _reportError(String message) {
     _errorMessageStreamController.add(message);
   }
 }

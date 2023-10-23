@@ -12,7 +12,7 @@ class _DownloadCaseListView extends StatelessWidget {
 
   Widget _buildExpandedListView() {
     StreamBuilder streamBuilder = StreamBuilder(
-        stream: _downloaderAPI.onDonwloadCasesUpdateStream,
+        stream: _downloaderAPI.onDownloadCasesUpdateStream,
         builder: (context, snapshot) {
           List<Widget> children = [];
 

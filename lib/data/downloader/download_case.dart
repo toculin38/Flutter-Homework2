@@ -1,101 +1,61 @@
 part of downloader;
 
-enum DonwloadStatus { pausing, ongoing, finished }
+enum DownloadStatus { pausing, ongoing, finished }
 
 class DownloadCase {
-  VoidCallback? _onDataCallback;
-  VoidCallback? _onDoneCallback;
-  VoidCallback? _onStatusChangeCallback;
-  VoidCallback? _onCaseDisposedCallback;
-  void Function(String data)? _onErrorCallback;
+  VoidCallback? _onData;
+  VoidCallback? _onDone;
+  VoidCallback? _onStatusChange;
+  VoidCallback? _onDisposed;
+  void Function(String data)? _onError;
 
-  final progressStreamController = StreamController<double>.broadcast();
+  final _progressStreamController = StreamController<double>.broadcast();
+  Stream<double> get progressStream => _progressStreamController.stream;
 
   final String url;
   final String _filePath;
   double progress = 0.0;
-  DonwloadStatus status = DonwloadStatus.pausing;
+  DownloadStatus status = DownloadStatus.pausing;
 
   http.Client? _client;
   StreamSubscription? _streamSubscription;
   IOSink? _sink;
-
   int _bytesDownloaded = 0;
 
   DownloadCase(this.url, this._filePath);
 
   void start() {
-    if (status == DonwloadStatus.pausing) {
-      _startDownload(_filePath);
-      _setStatus(DonwloadStatus.ongoing);
+    if (status == DownloadStatus.pausing) {
+      _download();
+      _updateStatus(DownloadStatus.ongoing);
     }
   }
 
   void pause() {
-    if (status == DonwloadStatus.ongoing) {
-      _releaseSubscription();
-      _releaseSink();
-      _releaseClient();
-      _setStatus(DonwloadStatus.pausing);
+    if (status == DownloadStatus.ongoing) {
+      _releaseResources();
+      _updateStatus(DownloadStatus.pausing);
     }
   }
 
-  void cancel() {
-    _dispose();
-  }
+  void cancel() => _dispose();
 
-  Future<void> _startDownload(String filePath) async {
+  Future<void> _download() async {
     try {
-      final response = await _fetchHttpResponse();
-      _handleHttpResponse(response);
+      final response = await _fetchResponse();
+      _processResponse(response);
     } catch (e) {
-      _handleError(e);
+      _reportError(e);
     }
   }
 
-  void _handleHttpResponse(http.StreamedResponse response) {
-    final statusCode = response.statusCode;
-    if (statusCode == 200 || statusCode == 206) {
-      _streamFileContent(response);
-    } else {
-      throw Exception(
-          'Error downloading file: Status code ${response.statusCode}');
-    }
-  }
-
-  void _handleError(Object error) {
-    _onErrorCallback?.call(error.toString());
-    _dispose();
-  }
-
-  void _streamFileContent(http.StreamedResponse response) {
-    final totalBytes = response.contentLength ?? 0;
-    final file = File(_filePath);
-    _sink = file.openWrite(mode: FileMode.append);
-
-    void onData(List<int> chunk) {
-      _bytesDownloaded += chunk.length;
-      _sink!.add(chunk);
-      progress = (_bytesDownloaded / totalBytes);
-      _onDataCallback?.call();
-    }
-
-    void onDone() async {
-      await _closeResources();
-      _setStatus(DonwloadStatus.finished);
-      _onDoneCallback?.call();
-    }
-
-    _streamSubscription = response.stream.listen(onData, onDone: onDone);
-  }
-
-  Future<http.StreamedResponse> _fetchHttpResponse() async {
+  Future<http.StreamedResponse> _fetchResponse() async {
     _client = http.Client();
-    final request = fetchRequest(url);
+    final request = _createRequest();
     return await _client!.send(request);
   }
 
-  http.Request fetchRequest(String url) {
+  http.Request _createRequest() {
     final Uri uri = Uri.parse(url);
     final request = http.Request('GET', uri);
 
@@ -106,19 +66,52 @@ class DownloadCase {
     return request;
   }
 
-  Future<void> _closeResources() async {
-    await _sink!.close();
-    _releaseClient();
+  void _processResponse(http.StreamedResponse response) {
+    if (_isValidResponse(response)) {
+      _streamToFile(response);
+    } else {
+      throw Exception('Error downloading: Status ${response.statusCode}');
+    }
   }
 
-  void _releaseSubscription() {
+  bool _isValidResponse(http.StreamedResponse response) {
+    return response.statusCode == 200 || response.statusCode == 206;
+  }
+
+  void _streamToFile(http.StreamedResponse response) {
+    final totalBytes = response.contentLength ?? 0;
+    _sink = File(_filePath).openWrite(mode: FileMode.append);
+
+    _streamSubscription = response.stream.listen(
+      (chunk) => _onDataReceived(chunk, totalBytes),
+      onDone: _finalizeDownload,
+      onError: _reportError,
+    );
+  }
+
+  void _onDataReceived(List<int> chunk, int totalBytes) {
+    _bytesDownloaded += chunk.length;
+    _sink!.add(chunk);
+    progress = (_bytesDownloaded / totalBytes);
+    _onData?.call();
+  }
+
+  Future<void> _finalizeDownload() async {
+    await _closeSink();
+    _releaseClient();
+    _updateStatus(DownloadStatus.finished);
+    _onDone?.call();
+  }
+
+  Future<void> _closeSink() async {
+    await _sink!.close();
+  }
+
+  void _releaseResources() {
     _streamSubscription?.cancel();
     _streamSubscription = null;
-  }
-
-  void _releaseSink() {
-    _sink?.close();
-    _sink = null;
+    _closeSink();
+    _releaseClient();
   }
 
   void _releaseClient() {
@@ -126,35 +119,25 @@ class DownloadCase {
     _client = null;
   }
 
-  void _setStatus(DonwloadStatus status) {
-    this.status = status;
-    _onStatusChangeCallback?.call();
+  void _updateStatus(DownloadStatus newStatus) {
+    status = newStatus;
+    _onStatusChange?.call();
+  }
+
+  void _reportError(Object error) {
+    _onError?.call(error.toString());
+    _dispose();
   }
 
   void _dispose() {
-    _releaseSubscription();
-    _releaseSink();
-    _releaseClient();
-    _onCaseDisposedCallback?.call();
+    _releaseResources();
+    _onDisposed?.call();
   }
 
-  void _setOnDataCallback(VoidCallback callback) {
-    _onDataCallback = callback;
-  }
-
-  void _setOnDoneCallback(VoidCallback callback) {
-    _onDoneCallback = callback;
-  }
-
-  void _setOnStatusChangeCallback(VoidCallback callback) {
-    _onStatusChangeCallback = callback;
-  }
-
-  void _setOnCaseDisposedCallback(VoidCallback callback) {
-    _onCaseDisposedCallback = callback;
-  }
-
-  void _setOnErrorCallback(void Function(String) callback) {
-    _onErrorCallback = callback;
-  }
+  // Setters for callbacks
+  void setOnData(VoidCallback callback) => _onData = callback;
+  void setOnDone(VoidCallback callback) => _onDone = callback;
+  void setOnStatusChange(VoidCallback callback) => _onStatusChange = callback;
+  void setOnDisposed(VoidCallback callback) => _onDisposed = callback;
+  void setOnError(void Function(String) callback) => _onError = callback;
 }
