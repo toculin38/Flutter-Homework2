@@ -1,20 +1,48 @@
 part of downloader_page_view;
 
-class _DownloadCaseContainer extends StatelessWidget {
+class _DownloadCaseContainer extends StatefulWidget {
   final DownloadCase _downloadCase;
-
   const _DownloadCaseContainer(this._downloadCase);
+  _DownloadCaseContainerState createState() => _DownloadCaseContainerState();
+}
+
+class _DownloadCaseContainerState extends State<_DownloadCaseContainer>
+    with WidgetsBindingObserver {
+  DownloadCase get _downloadCase => widget._downloadCase;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      _downloadCase.pause();
+    } else if (state == AppLifecycleState.resumed) {
+      _downloadCase.start();
+    }
+
+    super.didChangeAppLifecycleState(state);
+  }
 
   @override
   Widget build(BuildContext context) {
     const padding = EdgeInsets.all(3.0);
     final url = _downloadCase.url;
     final progress = _downloadCase.progress;
-    final child = _buildInlWellContainer(url, progress);
+    final child = _buildContainer(url, progress);
     return Padding(padding: padding, child: child);
   }
 
-  Widget _buildInlWellContainer(String text, double progress) {
+  Widget _buildContainer(String text, double progress) {
     final decoration = BoxDecoration(
       border: Border.all(color: Colors.black, width: 1.0),
     );
@@ -32,14 +60,7 @@ class _DownloadCaseContainer extends StatelessWidget {
       child: containnerRow,
     );
 
-    return InkWell(
-      onTap: _handleTap, // 這裡是當Container被點擊時要觸發的方法
-      child: container,
-    );
-  }
-
-  void _handleTap() {
-    print("Container被點擊了!");
+    return container;
   }
 
   Widget _buildMarqueeSection(String text, double progress) {
@@ -52,7 +73,7 @@ class _DownloadCaseContainer extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           progressBar,
-          Container(height: 20.0, child: marqueeText),
+          SizedBox(height: 20.0, child: marqueeText),
         ],
       ),
     );

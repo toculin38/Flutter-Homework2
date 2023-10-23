@@ -37,6 +37,7 @@ class DownloadRepositoryImpl implements DownloadRepository {
   void startDownload(String url) async {
     if (await _isValidUrl(url)) {
       final downloadCase = createDownloadCase(url);
+      downloadCase.start();
       _addNewDownloadCase(downloadCase);
     }
   }
@@ -51,7 +52,6 @@ class DownloadRepositoryImpl implements DownloadRepository {
     downloadCase._setOnStatusChangeCallback(_notifyDownloadCasesUpdate);
     downloadCase._setOnCaseDisposedCallback(
         () => _onCaseDisposedCallback(downloadCase));
-
     return downloadCase;
   }
 

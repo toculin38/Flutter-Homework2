@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http_downloader/data/history_repository/history_item.dart';
 import 'package:http_downloader/domain/history_repository.dart';
+import 'package:path/path.dart';
 
 class HistoryPage extends StatelessWidget {
   final HistoryRepository _historyRepo;
@@ -35,7 +36,7 @@ class HistoryPage extends StatelessWidget {
 
   Widget _buildValidBody(List<HistoryItem> historyItems) {
     const gridDelegate = SliverGridDelegateWithFixedCrossAxisCount(
-      crossAxisCount: 3,
+      crossAxisCount: 2,
       mainAxisSpacing: 4.0,
       crossAxisSpacing: 4.0,
     );
@@ -67,9 +68,39 @@ class HistoryPage extends StatelessWidget {
       );
     }
 
-    GestureDetector gestureDetector =
-        GestureDetector(onTap: () {}, child: imageWidget);
+    final fileText = Text(basename(historyItem.filePath),
+        style: const TextStyle(color: Colors.white, fontSize: 12),
+        overflow: TextOverflow.ellipsis);
 
-    return gestureDetector;
+    final urlText = Text(historyItem.url,
+        style: const TextStyle(color: Colors.white, fontSize: 10),
+        overflow: TextOverflow.ellipsis);
+
+    return GestureDetector(
+      onTap: () {},
+      child: Stack(
+        children: [
+          imageWidget,
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              color: Colors.black.withOpacity(0.5),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  fileText,
+                  urlText,
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
