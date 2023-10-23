@@ -62,6 +62,8 @@ class _DownloaderPageState extends State<DownloaderPage> {
   }
 
   Widget _buildBody() {
+    final stream = widget._downloadRepo.errorMessageStream;
+
     List<Widget> children = [
       _downloadUrlTextField,
       _downloadCaseListView,
@@ -71,7 +73,18 @@ class _DownloaderPageState extends State<DownloaderPage> {
       children: children,
     );
 
-    return Padding(padding: const EdgeInsets.all(20.0), child: child);
+    final padding = Padding(padding: const EdgeInsets.all(20.0), child: child);
+
+    builder(context, snapshot) {
+      if (snapshot.hasData) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _showAlertDialog('error', snapshot.data!);
+        });
+      }
+      return padding;
+    }
+
+    return StreamBuilder<String>(stream: stream, builder: builder);
   }
 
   Widget _buildFloatingActionButton() {
@@ -91,5 +104,21 @@ class _DownloaderPageState extends State<DownloaderPage> {
         context,
         MaterialPageRoute(
             builder: (context) => HistoryPage(widget._historyRepo)));
+  }
+
+  void _showAlertDialog(String titleString, String contentString) {
+    builder(BuildContext context) {
+      final title = Text(titleString);
+      final content = Text(contentString);
+      return AlertDialog(
+        title: title,
+        content: content,
+      );
+    }
+
+    showDialog(
+      context: context,
+      builder: builder,
+    );
   }
 }

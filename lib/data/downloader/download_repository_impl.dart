@@ -18,31 +18,65 @@ class _Strings {
 class DownloadRepositoryImpl implements DownloadRepository {
   final List<DownloadCase> _downloadCases = [];
   final HistoryRepository _historyRepo;
+
   final _downloadCasesUpdateStreamController =
       StreamController<List<DownloadCase>>.broadcast();
+
+  final _errorMessageStreamController = StreamController<String>.broadcast();
 
   @override
   Stream<List<DownloadCase>> get onDonwloadCasesUpdateStream =>
       _downloadCasesUpdateStreamController.stream;
 
+  @override
+  Stream<String> get errorMessageStream => _errorMessageStreamController.stream;
+
   DownloadRepositoryImpl(this._historyRepo);
 
   @override
-  void startDownload(String url) {
-    final downloadCase = createDownloadCase(url);
-    _addNewDownloadCase(downloadCase);
+  void startDownload(String url) async {
+    if (await _isValidUrl(url)) {
+      final downloadCase = createDownloadCase(url);
+      _addNewDownloadCase(downloadCase);
+    }
   }
 
   DownloadCase createDownloadCase(String url) {
-    final filePath = _generateValidFilePath(Uri.parse(url));
+    final uri = Uri.parse(url);
+    final filePath = _generateValidFilePath(uri);
     final downloadCase = DownloadCase(url, filePath);
     downloadCase._setOnDataCallback(_notifyDownloadCasesUpdate);
     downloadCase._setOnDoneCallback(() => _onDoneCallback(downloadCase));
+    downloadCase._setOnErrorCallback(_onErrorCallback);
     downloadCase._setOnStatusChangeCallback(_notifyDownloadCasesUpdate);
     downloadCase._setOnCaseDisposedCallback(
         () => _onCaseDisposedCallback(downloadCase));
 
     return downloadCase;
+  }
+
+  Future<bool> _isValidUrl(String url) async {
+    final client = http.Client();
+
+    try {
+      final uri = Uri.parse(url);
+      final response = await client.head(uri);
+
+      String? contentType = response.headers['content-type'];
+
+      bool isValidUri = uri.hasAuthority;
+      bool isContentTypeLegal = contentType != null &&
+          (contentType.contains('image/jpeg') ||
+              contentType.contains('image/png'));
+
+      return isValidUri && isContentTypeLegal;
+    } catch (e) {
+      _errorMessageStreamController.add(e.toString());
+    } finally {
+      client.close();
+    }
+
+    return false;
   }
 
   String _generateValidFilePath(Uri uri) {
@@ -83,5 +117,9 @@ class DownloadRepositoryImpl implements DownloadRepository {
 
   void _onCaseDisposedCallback(DownloadCase downloadCase) {
     _deleteDownloadCase(downloadCase);
+  }
+
+  void _onErrorCallback(String message) {
+    _errorMessageStreamController.add(message);
   }
 }
