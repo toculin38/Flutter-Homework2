@@ -6,8 +6,9 @@ import 'package:http_downloader/domain/history_repository.dart';
 import 'package:path/path.dart';
 
 class GalleryPage extends StatefulWidget {
-  GalleryPage(this._historyRepo, {super.key});
+  const GalleryPage(this._historyRepo, this._startPage, {super.key});
 
+  final int _startPage;
   final HistoryRepository _historyRepo;
 
   @override
@@ -15,15 +16,24 @@ class GalleryPage extends StatefulWidget {
 }
 
 class _GalleryPageState extends State<GalleryPage> {
-  final PageController _pageController = PageController(initialPage: 0);
   final List<HistoryItem> _historyItems = [];
+
+  late PageController _pageController;
   int _activePage = 0;
 
   @override
   void initState() {
+    _activePage = widget._startPage;
+    _pageController = PageController(initialPage: _activePage);
     _historyItems.clear();
     _historyItems.addAll(widget._historyRepo.getHistoryItems());
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   @override
@@ -46,6 +56,7 @@ class _GalleryPageState extends State<GalleryPage> {
 
   Widget _buildPageView() {
     final pageView = PageView.builder(
+      controller: _pageController,
       onPageChanged: (page) {
         setState(() => _activePage = page);
       },

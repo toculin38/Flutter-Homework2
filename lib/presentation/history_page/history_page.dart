@@ -109,14 +109,16 @@ class HistoryPage extends StatelessWidget {
     );
 
     return GestureDetector(
-      onTap: () => _navigateToGalleryPage(context),
+      onTap: () => _navigateToGalleryPage(context, historyItem),
       child: stack,
     );
   }
 
-  void _navigateToGalleryPage(BuildContext context) {
+  void _navigateToGalleryPage(BuildContext context, HistoryItem historyItem) {
+    int page = _historyRepo.getHistoryItems().indexOf(historyItem);
+
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => GalleryPage(_historyRepo)),
+      MaterialPageRoute(builder: (context) => GalleryPage(_historyRepo, page)),
     );
   }
 }
