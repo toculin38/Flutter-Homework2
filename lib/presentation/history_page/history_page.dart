@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http_downloader/data/history_repository/history_item.dart';
 import 'package:http_downloader/domain/history_repository.dart';
+import 'package:http_downloader/presentation/gallery_page/gallery_page.dart';
 import 'package:path/path.dart';
 
 class HistoryPage extends StatelessWidget {
@@ -25,16 +26,21 @@ class HistoryPage extends StatelessWidget {
 
   Widget _buildBody() {
     List<HistoryItem> historyItems = _historyRepo.getHistoryItems();
-    return historyItems.isEmpty
-        ? _buildEmptyBody()
-        : _buildValidBody(historyItems);
+
+    return Builder(
+      builder: (innerContext) {
+        return historyItems.isEmpty
+            ? _buildEmptyBody()
+            : _buildValidBody(historyItems, innerContext);
+      },
+    );
   }
 
   Widget _buildEmptyBody() {
     return const Center(child: Text('No photos available'));
   }
 
-  Widget _buildValidBody(List<HistoryItem> historyItems) {
+  Widget _buildValidBody(List<HistoryItem> historyItems, BuildContext context) {
     const gridDelegate = SliverGridDelegateWithFixedCrossAxisCount(
       crossAxisCount: 2,
       mainAxisSpacing: 4.0,
@@ -44,7 +50,7 @@ class HistoryPage extends StatelessWidget {
     List<Widget> children = [];
 
     for (HistoryItem historyItem in historyItems) {
-      children.add(_buildHistoryItemChild(historyItem));
+      children.add(_buildHistoryItemChild(historyItem, context));
     }
 
     return GridView(
@@ -53,7 +59,7 @@ class HistoryPage extends StatelessWidget {
     );
   }
 
-  Widget _buildHistoryItemChild(HistoryItem historyItem) {
+  Widget _buildHistoryItemChild(HistoryItem historyItem, BuildContext context) {
     File imageFile = File(historyItem.filePath);
 
     Widget imageWidget;
@@ -103,8 +109,14 @@ class HistoryPage extends StatelessWidget {
     );
 
     return GestureDetector(
-      onTap: () {},
+      onTap: () => _navigateToGalleryPage(context),
       child: stack,
+    );
+  }
+
+  void _navigateToGalleryPage(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => GalleryPage(_historyRepo)),
     );
   }
 }
