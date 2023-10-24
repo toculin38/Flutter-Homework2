@@ -5,11 +5,16 @@ import 'package:http_downloader/domain/history_repository.dart';
 import 'package:http_downloader/presentation/gallery_page/gallery_page.dart';
 import 'package:path/path.dart';
 
-class HistoryPage extends StatelessWidget {
+class HistoryPage extends StatefulWidget {
   final HistoryRepository _historyRepo;
-
   const HistoryPage(this._historyRepo, {super.key});
 
+  @override
+  State<StatefulWidget> createState() => HistoryPageState();
+}
+
+class HistoryPageState extends State<HistoryPage> {
+  HistoryRepository get _historyRepo => widget._historyRepo;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -116,9 +121,12 @@ class HistoryPage extends StatelessWidget {
 
   void _navigateToGalleryPage(BuildContext context, HistoryItem historyItem) {
     int page = _historyRepo.getHistoryItems().indexOf(historyItem);
-
-    Navigator.of(context).push(
+    Navigator.of(context)
+        .push(
       MaterialPageRoute(builder: (context) => GalleryPage(_historyRepo, page)),
-    );
+    )
+        .then((_) {
+      setState(() {});
+    });
   }
 }

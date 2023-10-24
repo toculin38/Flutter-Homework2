@@ -64,6 +64,9 @@ class _GalleryPageState extends State<GalleryPage> {
       itemBuilder: (context, index) {
         HistoryItem historyItem = _historyItems[index % _historyItems.length];
         File imageFile = File(historyItem.filePath);
+        if (!imageFile.existsSync()) {
+          return const Center(child: Text('File not found!'));
+        }
         return Image.file(imageFile, fit: BoxFit.contain);
       },
     );
