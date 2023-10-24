@@ -52,7 +52,6 @@ class DownloadRepositoryImpl implements DownloadRepository {
     downloadCase
       ..setOnDone(() => _handleDownloadCompletion(downloadCase))
       ..setOnError(_reportError)
-      ..setOnStatusChange(_updateDownloadCases)
       ..setOnDisposed(() => _removeDownloadCase(downloadCase));
 
     return downloadCase;
@@ -74,9 +73,12 @@ class DownloadRepositoryImpl implements DownloadRepository {
   bool _isUriValid(Uri uri) => uri.hasAuthority;
 
   bool _isContentTypeValid(String? contentType) {
-    return contentType != null &&
-        (contentType.contains('image/jpeg') ||
-            contentType.contains('image/png'));
+    const List<String> validContentTypes = [
+      'image/jpeg',
+      'image/png',
+    ];
+
+    return contentType != null && validContentTypes.contains(contentType);
   }
 
   String _generateValidFilePath(Uri uri) {
@@ -105,7 +107,6 @@ class DownloadRepositoryImpl implements DownloadRepository {
   }
 
   void _handleDownloadCompletion(DownloadCase downloadCase) {
-    _updateDownloadCases();
     _historyRepo.addNewHistoryItem(downloadCase.url, downloadCase._filePath);
   }
 

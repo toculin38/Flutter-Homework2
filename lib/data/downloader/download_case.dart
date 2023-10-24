@@ -4,16 +4,20 @@ enum DownloadStatus { pausing, ongoing, finished }
 
 class DownloadCase {
   VoidCallback? _onDone;
-  VoidCallback? _onStatusChange;
   VoidCallback? _onDisposed;
   void Function(String data)? _onError;
 
   final _progressSubject = BehaviorSubject<double>.seeded(0.0);
+  final _statusSubject =
+      BehaviorSubject<DownloadStatus>.seeded(DownloadStatus.pausing);
+
   Stream<double> get progressStream => _progressSubject.stream;
+  Stream<DownloadStatus> get statusStream => _statusSubject.stream;
+
+  DownloadStatus get status => _statusSubject.value;
 
   final String url;
   final String _filePath;
-  DownloadStatus status = DownloadStatus.pausing;
 
   http.Client? _client;
   StreamSubscription? _streamSubscription;
@@ -117,8 +121,7 @@ class DownloadCase {
   }
 
   void _updateStatus(DownloadStatus newStatus) {
-    status = newStatus;
-    _onStatusChange?.call();
+    _statusSubject.value = newStatus;
   }
 
   void _reportError(Object error) {
@@ -129,12 +132,12 @@ class DownloadCase {
   void _dispose() {
     _releaseDownloadResources();
     _progressSubject.close();
+    _statusSubject.close();
     _onDisposed?.call();
   }
 
   // Setters for callbacks
   void setOnDone(VoidCallback callback) => _onDone = callback;
-  void setOnStatusChange(VoidCallback callback) => _onStatusChange = callback;
   void setOnDisposed(VoidCallback callback) => _onDisposed = callback;
   void setOnError(void Function(String) callback) => _onError = callback;
 }

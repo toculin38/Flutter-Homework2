@@ -3,6 +3,8 @@ part of downloader_page_view;
 class _DownloadCaseContainer extends StatefulWidget {
   final DownloadCase _downloadCase;
   const _DownloadCaseContainer(this._downloadCase);
+
+  @override
   _DownloadCaseContainerState createState() => _DownloadCaseContainerState();
 }
 
@@ -49,7 +51,7 @@ class _DownloadCaseContainerState extends State<_DownloadCaseContainer>
     final containnerRow = Row(
       children: [
         _buildMarqueeSection(text),
-        _buildIconButtonsSection(),
+        _buildIconButtonsSectionWithStreamBuilder(),
       ],
     );
 
@@ -87,10 +89,19 @@ class _DownloadCaseContainerState extends State<_DownloadCaseContainer>
     return streamBuilder;
   }
 
-  Widget _buildIconButtonsSection() {
+  Widget _buildIconButtonsSectionWithStreamBuilder() {
+    StreamBuilder streamBuilder = StreamBuilder(
+        stream: _downloadCase.statusStream,
+        initialData: _downloadCase.status,
+        builder: (context, snapshot) =>
+            _buildIconButtonsSection(snapshot.data));
+    return streamBuilder;
+  }
+
+  Widget _buildIconButtonsSection(DownloadStatus status) {
     List<Widget> children = [];
 
-    if (_downloadCase.status == DownloadStatus.pausing) {
+    if (status == DownloadStatus.pausing) {
       const iconStart = Icon(Icons.play_arrow);
       final startButton = IconButton(
           icon: iconStart, iconSize: 30, onPressed: _downloadCase.start);
@@ -98,7 +109,7 @@ class _DownloadCaseContainerState extends State<_DownloadCaseContainer>
       children.add(startButton);
     }
 
-    if (_downloadCase.status == DownloadStatus.ongoing) {
+    if (status == DownloadStatus.ongoing) {
       const iconPause = Icon(Icons.pause);
       final pauseButton = IconButton(
           icon: iconPause, iconSize: 30, onPressed: _downloadCase.pause);
