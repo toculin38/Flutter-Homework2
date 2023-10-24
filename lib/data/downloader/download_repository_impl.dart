@@ -8,6 +8,8 @@ import 'package:path/path.dart' as path;
 import 'package:http/http.dart' as http;
 import 'dart:io';
 
+import 'package:rxdart/subjects.dart';
+
 part 'download_case.dart';
 
 class _Strings {
@@ -48,7 +50,6 @@ class DownloadRepositoryImpl implements DownloadRepository {
 
     // Set callbacks
     downloadCase
-      ..setOnData(_updateDownloadCases)
       ..setOnDone(() => _handleDownloadCompletion(downloadCase))
       ..setOnError(_reportError)
       ..setOnStatusChange(_updateDownloadCases)

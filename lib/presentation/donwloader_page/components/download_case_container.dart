@@ -37,19 +37,18 @@ class _DownloadCaseContainerState extends State<_DownloadCaseContainer>
   Widget build(BuildContext context) {
     const padding = EdgeInsets.all(3.0);
     final url = _downloadCase.url;
-    final progress = _downloadCase.progress;
-    final child = _buildContainer(url, progress);
+    final child = _buildContainer(url);
     return Padding(padding: padding, child: child);
   }
 
-  Widget _buildContainer(String text, double progress) {
+  Widget _buildContainer(String text) {
     final decoration = BoxDecoration(
       border: Border.all(color: Colors.black, width: 1.0),
     );
 
     final containnerRow = Row(
       children: [
-        _buildMarqueeSection(text, progress),
+        _buildMarqueeSection(text),
         _buildIconButtonsSection(),
       ],
     );
@@ -63,8 +62,8 @@ class _DownloadCaseContainerState extends State<_DownloadCaseContainer>
     return container;
   }
 
-  Widget _buildMarqueeSection(String text, double progress) {
-    final progressBar = LinearProgressIndicator(value: progress);
+  Widget _buildMarqueeSection(String text) {
+    final progressBar = _buildProgressBar();
     final marqueeText = Marquee(text: text, velocity: 30.0, blankSpace: 30.0);
 
     return Expanded(
@@ -77,6 +76,15 @@ class _DownloadCaseContainerState extends State<_DownloadCaseContainer>
         ],
       ),
     );
+  }
+
+  Widget _buildProgressBar() {
+    final streamBuilder = StreamBuilder(
+        stream: _downloadCase.progressStream,
+        builder: (context, snapshot) =>
+            LinearProgressIndicator(value: snapshot.data));
+
+    return streamBuilder;
   }
 
   Widget _buildIconButtonsSection() {

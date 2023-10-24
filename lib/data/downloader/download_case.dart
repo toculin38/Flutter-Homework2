@@ -3,18 +3,16 @@ part of downloader;
 enum DownloadStatus { pausing, ongoing, finished }
 
 class DownloadCase {
-  VoidCallback? _onData;
   VoidCallback? _onDone;
   VoidCallback? _onStatusChange;
   VoidCallback? _onDisposed;
   void Function(String data)? _onError;
 
-  final _progressStreamController = StreamController<double>.broadcast();
-  Stream<double> get progressStream => _progressStreamController.stream;
+  final _progressSubject = BehaviorSubject<double>.seeded(0.0);
+  Stream<double> get progressStream => _progressSubject.stream;
 
   final String url;
   final String _filePath;
-  double progress = 0.0;
   DownloadStatus status = DownloadStatus.pausing;
 
   http.Client? _client;
@@ -33,7 +31,7 @@ class DownloadCase {
 
   void pause() {
     if (status == DownloadStatus.ongoing) {
-      _releaseResources();
+      _releaseDownloadResources();
       _updateStatus(DownloadStatus.pausing);
     }
   }
@@ -92,8 +90,7 @@ class DownloadCase {
   void _onDataReceived(List<int> chunk, int totalBytes) {
     _bytesDownloaded += chunk.length;
     _sink!.add(chunk);
-    progress = (_bytesDownloaded / totalBytes);
-    _onData?.call();
+    _progressSubject.value = (_bytesDownloaded / totalBytes);
   }
 
   Future<void> _finalizeDownload() async {
@@ -107,7 +104,7 @@ class DownloadCase {
     await _sink!.close();
   }
 
-  void _releaseResources() {
+  void _releaseDownloadResources() {
     _streamSubscription?.cancel();
     _streamSubscription = null;
     _closeSink();
@@ -130,12 +127,12 @@ class DownloadCase {
   }
 
   void _dispose() {
-    _releaseResources();
+    _releaseDownloadResources();
+    _progressSubject.close();
     _onDisposed?.call();
   }
 
   // Setters for callbacks
-  void setOnData(VoidCallback callback) => _onData = callback;
   void setOnDone(VoidCallback callback) => _onDone = callback;
   void setOnStatusChange(VoidCallback callback) => _onStatusChange = callback;
   void setOnDisposed(VoidCallback callback) => _onDisposed = callback;
