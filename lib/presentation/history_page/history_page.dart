@@ -120,10 +120,12 @@ class HistoryPageState extends State<HistoryPage> {
   }
 
   void _navigateToGalleryPage(BuildContext context, HistoryItem historyItem) {
-    int page = _historyRepo.getHistoryItems().indexOf(historyItem);
+    List<HistoryItem> historyItems = _historyRepo.getHistoryItems();
+    int page = historyItems.indexOf(historyItem);
+
     Navigator.of(context)
         .push(
-      MaterialPageRoute(builder: (context) => GalleryPage(_historyRepo, page)),
+      MaterialPageRoute(builder: (context) => GalleryPage(historyItems, page)),
     )
         .then((_) {
       setState(() {});

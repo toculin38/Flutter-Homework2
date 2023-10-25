@@ -10,18 +10,19 @@ import 'package:http_downloader/presentation/donwloader_page/downloader_page.dar
 void main() async {
   await Hive.initFlutter();
   Hive.registerAdapter(HistoryItemAdapter());
-  runApp(const MyApp());
+  final HistoryRepository historyRepo = HistoryRepositoryImpl();
+  final DownloadRepository downloadRepo = DownloadRepositoryImpl(historyRepo);
+  runApp(MyApp(historyRepo, downloadRepo));
   Hive.close();
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp(this._historyRepo, this._downloadRepo, {super.key});
+  final HistoryRepository _historyRepo;
+  final DownloadRepository _downloadRepo;
 
   @override
   Widget build(BuildContext context) {
-    final HistoryRepository historyRepo = HistoryRepositoryImpl();
-    final DownloadRepository downloadRepo = DownloadRepositoryImpl(historyRepo);
-
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
@@ -30,8 +31,8 @@ class MyApp extends StatelessWidget {
       ),
       home: DownloaderPage(
           title: 'Http Downloader',
-          downloadRepo: downloadRepo,
-          historyRepo: historyRepo),
+          downloadRepo: _downloadRepo,
+          historyRepo: _historyRepo),
     );
   }
 }

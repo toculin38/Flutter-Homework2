@@ -2,22 +2,20 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:http_downloader/data/history_repository/history_item.dart';
-import 'package:http_downloader/domain/history_repository.dart';
 import 'package:path/path.dart';
 
 class GalleryPage extends StatefulWidget {
-  const GalleryPage(this._historyRepo, this._startPage, {super.key});
+  const GalleryPage(this._historyItems, this._startPage, {super.key});
 
   final int _startPage;
-  final HistoryRepository _historyRepo;
+  final List<HistoryItem> _historyItems;
 
   @override
   State<StatefulWidget> createState() => _GalleryPageState();
 }
 
 class _GalleryPageState extends State<GalleryPage> {
-  final List<HistoryItem> _historyItems = [];
-
+  List<HistoryItem> get _historyItems => widget._historyItems;
   late PageController _pageController;
   int _activePage = 0;
 
@@ -25,8 +23,6 @@ class _GalleryPageState extends State<GalleryPage> {
   void initState() {
     _activePage = widget._startPage;
     _pageController = PageController(initialPage: _activePage);
-    _historyItems.clear();
-    _historyItems.addAll(widget._historyRepo.getHistoryItems());
     super.initState();
   }
 
@@ -55,20 +51,28 @@ class _GalleryPageState extends State<GalleryPage> {
   }
 
   Widget _buildPageView() {
+    itemBuilder(BuildContext context, int index) {
+      HistoryItem historyItem = _historyItems[index % _historyItems.length];
+      File imageFile = File(historyItem.filePath);
+
+      Widget toReturn;
+
+      if (imageFile.existsSync()) {
+        toReturn = Image.file(imageFile, fit: BoxFit.contain);
+      } else {
+        toReturn = const Center(child: Text('File not found!'));
+      }
+
+      return toReturn;
+    }
+
     final pageView = PageView.builder(
       controller: _pageController,
       onPageChanged: (page) {
         setState(() => _activePage = page);
       },
       itemCount: _historyItems.length,
-      itemBuilder: (context, index) {
-        HistoryItem historyItem = _historyItems[index % _historyItems.length];
-        File imageFile = File(historyItem.filePath);
-        if (!imageFile.existsSync()) {
-          return const Center(child: Text('File not found!'));
-        }
-        return Image.file(imageFile, fit: BoxFit.contain);
-      },
+      itemBuilder: itemBuilder,
     );
 
     return pageView;
