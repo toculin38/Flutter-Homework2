@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:http_downloader/data/history_repository/history_item.dart';
 import 'package:http_downloader/domain/history_repository.dart';
@@ -35,8 +36,9 @@ class HistoryRepositoryImpl implements HistoryRepository {
 
   @override
   void addNewHistoryItem(String url, String filePath) {
+    final generatedId = _generateId();
     final historyItem =
-        HistoryItem(id: _generateId(), url: url, filePath: filePath);
+        HistoryItem(id: generatedId, url: url, filePath: filePath);
     _historyBox.put(historyItem.id, historyItem);
   }
 
@@ -46,6 +48,18 @@ class HistoryRepositoryImpl implements HistoryRepository {
   }
 
   String _generateId() {
-    return DateTime.now().millisecondsSinceEpoch.toString();
+    const length = 16;
+    final random = Random.secure();
+    final values = List<int>.generate(length, (i) => random.nextInt(256));
+
+    String id = '';
+
+    for (int value in values) {
+      id += _paddedHex(value);
+    }
+
+    return id;
   }
+
+  String _paddedHex(int byte) => byte.toRadixString(16).padLeft(2, '0');
 }
