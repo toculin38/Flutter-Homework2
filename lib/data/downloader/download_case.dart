@@ -3,9 +3,10 @@ part of downloader;
 enum DownloadStatus { pausing, ongoing, finished }
 
 class DownloadCase {
-  VoidCallback? _onDone;
-  VoidCallback? _onDisposed;
-  void Function(String data)? _onError;
+  DownloadCase(this.url, this._filePath);
+
+  final String url;
+  final String _filePath;
 
   final _progressSubject = BehaviorSubject<double>.seeded(0.0);
   final _statusSubject =
@@ -13,18 +14,16 @@ class DownloadCase {
 
   Stream<double> get progressStream => _progressSubject.stream;
   Stream<DownloadStatus> get statusStream => _statusSubject.stream;
-
   DownloadStatus get status => _statusSubject.value;
 
-  final String url;
-  final String _filePath;
+  VoidCallback? _onDone;
+  VoidCallback? _onDisposed;
+  void Function(String data)? _onError;
 
   http.Client? _client;
   StreamSubscription? _streamSubscription;
   IOSink? _sink;
   int _bytesDownloaded = 0;
-
-  DownloadCase(this.url, this._filePath);
 
   void start() {
     if (status == DownloadStatus.pausing) {
@@ -136,7 +135,6 @@ class DownloadCase {
     _onDisposed?.call();
   }
 
-  // Setters for callbacks
   void setOnDone(VoidCallback callback) => _onDone = callback;
   void setOnDisposed(VoidCallback callback) => _onDisposed = callback;
   void setOnError(void Function(String) callback) => _onError = callback;
